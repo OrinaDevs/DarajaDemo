@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,7 +26,7 @@ SECRET_KEY = 'django-insecure-uw9043hf13ah#psp#($=s1pbchxz*8i&8*unj%=ayi^ttoly6d
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok-free.dev', '.ngrok-free.app']
 
 
 # Application definition
@@ -38,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'home',
+    'mpesa',
 ]
 
 MIDDLEWARE = [
@@ -116,3 +118,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+# MPESA API
+MPESA_CONSUMER_KEY = config("MPESA_CONSUMER_KEY")
+MPESA_CONSUMER_SECRET = config("MPESA_CONSUMER_SECRET")
+MPESA_SHORTCODE = config("MPESA_SHORTCODE", default="174379")
+MPESA_PASSKEY = config("MPESA_PASSKEY")
+MPESA_CALLBACK_URL = config("MPESA_CALLBACK_URL")
+MPESA_BASE_URL = config("MPESA_BASE_URL", default="https://sandbox.safaricom.co.ke")
