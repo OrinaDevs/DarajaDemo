@@ -76,3 +76,15 @@ def mpesa_callback(request):
     except Exception as e:
         logger.exception("Callback Processing failed")
         return JsonResponse({"ResultCode": 1, "ResultDesc": "Failed"}, status=500)
+
+def check_status(request, checkout_request_id):
+    try:
+        transaction = MpesaTransaction.objects.get(checkout_request_id=checkout_request_id)
+        return JsonResponse({
+            "status": transaction.status,
+            "mpesa_receipt": transaction.mpesa_receipt,
+            "result_desc": transaction.result_desc,
+        })
+
+    except MpesaTransaction.DoesNotExist:
+        return JsonResponse({"error": "Transaction not found"}, status=404)

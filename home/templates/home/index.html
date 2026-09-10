@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pay With Mpesa</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 400px;
+            margin: 60px auto;
+            padding: 0 20px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            background: #00A651;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:disabled {
+            background: #999;
+            cursor:not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>Make a Payment</h1>
+
+    <form id="payment-form">
+        <label>Phone Number</label>
+        <input type="text" id="phone_number" placeholder="0712345678" required>
+
+        <label>Amount (KES)</label>
+        <input type="number" id="amount" placeholder="1" min="1" required>
+
+        <button type="submit" id="submit-btn">Pay Now</button>
+    </form>
+
+    <div id="status"></div>
+
+    <script>
+        const form = document.getElementById("phone_number");
+        const submitBtn = document.getElementById("submit-btn");
+        const statusDiv = document.getElementById("status");
+        let pollInterval;
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            clearInterval(pollInterval);
+
+            const phone_number = document.getElementById("phone_number").value;
+            const amount = document.getElementById("amount").value;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Sending...";
+            statusDiv.style.display = "block";
+            statusDiv.className = "pending";
+            statusDiv.textContent = "Sending STK push...";
+
+            try {
+                const response = await fetch("/mpesa/stk-push", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({phone_number, amount}),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    statusDiv.className = "failed";
+                    statusDiv.textContent = data.error || "Something went wrong.";
+                    resetButton();
+                    return;
+                }
+
+                const checkoutRequestId = data.data.ChechoutRequestID;
+                statusDiv.textContent = "Check your Phone and enter your M-Pesa PIN...";
+                pollForStatus(checkoutRequestId);
+            } catch (err) {
+                statusDiv.className = "failed";
+                statusDiv.textContent = "Network error. Please try again.";
+                resetButton();
+            }
+        });
+
+        function resetButton() {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Pay Now";
+        }
+    </script>
+</body>
+</html>
