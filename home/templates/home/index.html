@@ -28,6 +28,21 @@
             background: #999;
             cursor:not-allowed;
         }
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .pending {
+            background: #fff3cd;
+        }
+        .success {
+            background: #d4edda;
+        }
+        .failed {
+            background: #f8d7da;
+        }
     </style>
 </head>
 <body>
@@ -46,7 +61,7 @@
     <div id="status"></div>
 
     <script>
-        const form = document.getElementById("phone_number");
+        const form = document.getElementById("payment-form");
         const submitBtn = document.getElementById("submit-btn");
         const statusDiv = document.getElementById("status");
         let pollInterval;
@@ -65,7 +80,7 @@
             statusDiv.textContent = "Sending STK push...";
 
             try {
-                const response = await fetch("/mpesa/stk-push", {
+                const response = await fetch("/mpesa/stk-push/", {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({phone_number, amount}),
@@ -80,7 +95,7 @@
                     return;
                 }
 
-                const checkoutRequestId = data.data.ChechoutRequestID;
+                const checkoutRequestId = data.data.CheckoutRequestID;
                 statusDiv.textContent = "Check your Phone and enter your M-Pesa PIN...";
                 pollForStatus(checkoutRequestId);
             } catch (err) {
@@ -89,6 +104,41 @@
                 resetButton();
             }
         });
+
+        function pollForStatus(checkoutRequestId) {
+            let attempts = 0;
+            const maxAttempts = 20;
+
+            pollInterval = setInterval(async () => {
+                attempts++;
+                try {
+                    const res = await fetch(`/mpesa/status/${checkoutRequestId}/`);
+                    const data = await res.json();
+
+                    if (data.status ==="Success") {
+                        clearInterval(pollInterval);
+                        statusDiv.className = "success";
+                        statusDiv.textContent = `Payment successful! Receipt: ${data.mpesa_receipt}`;
+                        resetButton()
+                    } else if (data.status === "Failed") {
+                        clearInterval(pollInterval);
+                        statusDiv.className = "failed";
+                        statusDiv.textContent = `Payment failed: ${data.result_desc || 'Unknown Reason'}`;
+                        resetButton();
+                    }
+
+                } catch (err) {
+
+                }
+
+                if (attempts >= maxAttempts) {
+                    clearInterval(pollInterval);
+                    statusDiv.className = "failed";
+                    statusDiv.textContent = "Timed out waiting for payment confirmation.";
+                    resetButton();
+                }
+            }, 2000);
+        }
 
         function resetButton() {
             submitBtn.disabled = false;
